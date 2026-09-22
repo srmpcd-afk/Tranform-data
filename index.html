@@ -786,6 +786,7 @@
     font-weight:800; font-size:13px; margin-right:8px;
   }
   #panel-auto .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  #panel-auto .two-col.single{ grid-template-columns:1fr; }
   @media (max-width:720px){ #panel-auto .two-col{ grid-template-columns:1fr; } }
   #panel-auto .dz-label{ font-size:13px; font-weight:700; color:var(--ink-soft); margin-bottom:8px; display:block; }
   #panel-auto .settings-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:4px; }
@@ -1593,13 +1594,13 @@
 
     <div class="delim-row" id="autoModeRow" style="margin-bottom:18px;">
       <label class="delim-chip on" id="autoModeChipRaw" data-mode="raw"><input type="radio" name="autoMode" value="raw" checked style="display:none;">ไฟล์ดิบ</label>
-      <label class="delim-chip" id="autoModeChipEdited" data-mode="edited"><input type="radio" name="autoMode" value="edited" style="display:none;">ไฟล์รายงานที่แก้ไขแล้ว</label>
+      <label class="delim-chip" id="autoModeChipEdited" data-mode="edited"><input type="radio" name="autoMode" value="edited" style="display:none;">KPI Dashboard ส่วนงาน</label>
     </div>
     <div class="hint-box" id="autoModeHint" style="margin-bottom:18px;">
       <span id="autoModeHintText">อัปโหลดไฟล์ดิบ 2 ไฟล์ ระบบแยกคอลัมน์ จัดรายงาน และรวมเป็นไฟล์ KPI ให้อัตโนมัติ</span>
     </div>
 
-    <div class="two-col">
+    <div class="two-col" id="autoDropzoneRow">
       <div>
         <span class="dz-label" id="dzLabelComplaint">ไฟล์เรื่องร้องเรียน</span>
         <label class="dropzone" id="dzComplaint">
@@ -1612,7 +1613,7 @@
         </label>
         <div id="chipComplaint"></div>
       </div>
-      <div>
+      <div id="autoAssistCol">
         <span class="dz-label" id="dzLabelAssist">ไฟล์เรื่องขอความอนุเคราะห์</span>
         <label class="dropzone" id="dzAssist">
           <input type="file" id="fileAssist" accept=".xlsx,.xls"/>
@@ -1671,19 +1672,9 @@
 
   <div class="card" id="resultsCard" style="display:none;">
     <h2>เสร็จสิ้น — ดาวน์โหลดไฟล์</h2>
-    <p class="sub">ไฟล์รายงาน 2 ไฟล์ และไฟล์ KPI Dashboard 2 ไฟล์</p>
+    <p class="sub" id="resultsCardSub">ไฟล์ KPI Dashboard 1 ไฟล์</p>
     <div class="results-grid">
-      <div class="result-card">
-        <h3>รายงาน สตพ. — เรื่องร้องเรียน</h3>
-        <p>แยกชีทตามหน่วยงาน จัดกลุ่มตามชื่อ-นามสกุล</p>
-        <button class="btn btn-ghost" id="dlReportComplaint">ดาวน์โหลด .xlsx</button>
-      </div>
-      <div class="result-card">
-        <h3>รายงาน สตพ. — เรื่องขอความอนุเคราะห์</h3>
-        <p>แยกชีทตามหน่วยงาน ตารางเรียบ</p>
-        <button class="btn btn-ghost" id="dlReportAssist">ดาวน์โหลด .xlsx</button>
-      </div>
-      <div class="result-card">
+      <div class="result-card" id="resultCardPerson">
         <h3>KPI Dashboard — ระดับบุคคล</h3>
         <p id="personSummary">—</p>
         <div class="btn-row" style="margin-top:10px;">
@@ -1691,7 +1682,7 @@
           <button class="btn btn-ghost" id="cpKpiPerson">คัดลอกไปวางใน Google Sheets</button>
         </div>
       </div>
-      <div class="result-card">
+      <div class="result-card" id="resultCardUnit" style="display:none;">
         <h3>KPI Dashboard — ระดับส่วนงาน</h3>
         <p id="unitSummary">—</p>
         <div class="btn-row" style="margin-top:10px;">
@@ -4995,10 +4986,10 @@
       assistLabel: 'ไฟล์เรื่องขอความอนุเคราะห์',
     },
     edited: {
-      hint: 'ใช้เมื่อแก้ไข/กรอกข้อมูลในไฟล์ &ldquo;รายงาน สตพ.&rdquo; ที่ดาวน์โหลดไปแล้ว — อัปโหลดกลับมาที่นี่เพื่อข้ามขั้นตอนแยกคอลัมน์/จัดรายงาน แล้วรวมเป็นไฟล์ KPI ทันที',
-      sub: 'อัปโหลดไฟล์รายงาน (สตพ.) ที่แก้ไขแล้ว ไม่ใช่ไฟล์ดิบ',
-      complaintLabel: 'ไฟล์รายงาน — เรื่องร้องเรียน (แก้ไขแล้ว)',
-      assistLabel: 'ไฟล์รายงาน — เรื่องขอความอนุเคราะห์ (แก้ไขแล้ว)',
+      hint: 'ใช้เมื่อมีไฟล์ &ldquo;KPI Dashboard ระดับบุคคล&rdquo; (ที่ดาวน์โหลด/แก้ไขข้อมูลแล้ว) อยู่ในมือ — อัปโหลดไฟล์นั้นกลับมาที่นี่เพื่อคำนวณสรุป &ldquo;KPI Dashboard ระดับส่วนงาน&rdquo; ใหม่ทันที โดยไม่ต้องประมวลผลไฟล์ดิบซ้ำ',
+      sub: 'อัปโหลดไฟล์ KPI Dashboard ระดับบุคคล 1 ไฟล์ (.xlsx หรือ .csv) — ไม่ใช่ไฟล์ดิบ',
+      complaintLabel: 'ไฟล์ KPI Dashboard ระดับบุคคล (แก้ไข/อัปเดตแล้ว)',
+      assistLabel: '',
     },
   };
   function setAutoMode(mode){
@@ -5025,6 +5016,12 @@
     autoModeSub.textContent = t.sub;
     dzLabelComplaint.textContent = t.complaintLabel;
     dzLabelAssist.textContent = t.assistLabel;
+    // Edited mode takes a single KPI Dashboard (person-level) file, so hide
+    // the second dropzone entirely and widen the first to full width; it
+    // also accepts the .csv the dashboard is normally downloaded as.
+    document.getElementById('autoAssistCol').style.display = mode==='edited' ? 'none' : '';
+    document.getElementById('autoDropzoneRow').classList.toggle('single', mode==='edited');
+    document.getElementById('fileComplaint').accept = mode==='edited' ? '.xlsx,.xls,.csv' : '.xlsx,.xls';
     document.getElementById('autoSettingsHiddenNote').style.display = mode==='edited' ? 'block' : 'none';
     document.querySelectorAll('.auto-report-only-field').forEach(el=>{ el.style.display = mode==='edited' ? 'none' : ''; });
     renderSteps();
@@ -5043,9 +5040,8 @@
     { key:'merge', label:'รวมไฟล์เป็นชุดข้อมูล KPI Dashboard (บุคคล + ส่วนงาน)' },
   ];
   const STEP_DEFS_EDITED = [
-    { key:'read1', label:'อ่านไฟล์รายงานที่แก้ไขแล้ว — เรื่องร้องเรียน' },
-    { key:'read2', label:'อ่านไฟล์รายงานที่แก้ไขแล้ว — เรื่องขอความอนุเคราะห์' },
-    { key:'merge', label:'รวมไฟล์เป็นชุดข้อมูล KPI Dashboard (บุคคล + ส่วนงาน)' },
+    { key:'read1', label:'อ่านไฟล์ KPI Dashboard ระดับบุคคล' },
+    { key:'merge', label:'คำนวณสรุป KPI Dashboard ระดับส่วนงานใหม่' },
   ];
   function currentStepDefs(){ return autoMode === 'edited' ? STEP_DEFS_EDITED : STEP_DEFS_RAW; }
   const stepsLog = document.getElementById('stepsLog');
@@ -5090,20 +5086,74 @@
     return { buffer, wbForKpi, summary: reportSheetsCache.map(s=> `${s.name}: ${s.count}`).join(' · ') };
   }
 
-  // Reads an already-built, already-edited "รายงาน สตพ." .xlsx (i.e. the
-  // file downloaded from a previous run, corrected by hand, and re-uploaded)
-  // straight into the shape the merge step expects, skipping split/report
-  // entirely — the file itself is treated as already final.
-  async function processOneFileEdited(file, stepReadKey){
+  // Reads an already-downloaded (and possibly hand-corrected) "KPI Dashboard
+  // — ระดับบุคคล" file (.xlsx or .csv) straight into row objects keyed by
+  // the same Thai column headers the dashboard was exported with — no
+  // split/report step needed, the file itself already has one row per case
+  // with all fields (สถานะ, การนำเข้าข้อมูล, ฯลฯ) already derived.
+  async function processPersonLevelFile(file, stepReadKey){
     setStep(stepReadKey, 'active');
     const buffer = await file.arrayBuffer();
-    const wbForKpi = XLSX.read(new Uint8Array(buffer), { type:'array' });
-    if(!wbForKpi.SheetNames.length){
+    const wb = XLSX.read(new Uint8Array(buffer), { type:'array' });
+    if(!wb.SheetNames.length){
       throw new Error(`ไม่พบชีตข้อมูลในไฟล์ "${file.name}"`);
     }
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rawRows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+    if(!rawRows.length){
+      throw new Error(`ไม่พบแถวข้อมูลในไฟล์ "${file.name}"`);
+    }
+    // Strip a stray UTF-8 BOM some CSV exports leave on the first header
+    // cell (e.g. "\ufeffหน่วยงาน") so column lookups by exact header text
+    // still match.
+    const rows = rawRows.map(r=>{
+      const out = {};
+      Object.keys(r).forEach(k=>{ out[k.replace(/^\ufeff/, '').trim()] = r[k]; });
+      return out;
+    });
     setStep(stepReadKey, 'done');
-    const summary = wbForKpi.SheetNames.join(' · ');
-    return { buffer, wbForKpi, summary };
+    return rows;
+  }
+
+  // Recomputes the unit-level (ส่วนงาน) summary straight from KPI Dashboard
+  // ระดับบุคคล rows — same grouping/counting rules as kpiAggregateByUnit,
+  // just sourced from the already-derived person-level fields (สถานะ,
+  // การนำเข้าข้อมูล, ...) instead of re-deriving them from a raw workbook.
+  function kpiAggregateByUnitFromPersonRows(personRows, criteriaDays){
+    const groups = new Map();
+    personRows.forEach(r=>{
+      const receiveDt = parseFlexibleDate(r['วันที่รับ']);
+      if(!receiveDt) return; // no usable receive date — can't bucket into เดือน/ปี
+      const unit = String(r['หน่วยงาน']||'').trim();
+      const typeLabel = String(r['ประเภทเรื่อง']||'').trim();
+      const jsMonth = receiveDt.getMonth();
+      const monthTH = KPI_THAI_MONTHS[jsMonth];
+      const yearBE = receiveDt.getFullYear() + 543;
+      const key = [unit, yearBE, monthTH, typeLabel].join('|||');
+      if(!groups.has(key)){
+        groups.set(key, {
+          unit, monthTH, yearBE, typeLabel,
+          sortKey: yearBE*12 + kpiFiscalMonthOrder(jsMonth),
+          received:0, completed:0, inProgress:0, within:0, overtime:0, dataComplete:0, dataIncomplete:0,
+        });
+      }
+      const g = groups.get(key);
+      g.received += 1;
+      const status = String(r['สถานะการดำเนินงาน']||'').trim();
+      if(status === 'แล้วเสร็จ'){
+        g.completed += 1;
+        const d = parseFloat(r['จำนวนวันดำเนินการ (วัน)']);
+        if(!isNaN(d)){
+          if(d <= criteriaDays) g.within += 1; else g.overtime += 1;
+        }
+      } else {
+        g.inProgress += 1;
+      }
+      const dataImport = String(r['การนำเข้าข้อมูล']||'').trim();
+      if(dataImport === 'ครบถ้วน') g.dataComplete += 1;
+      else if(dataImport === 'ไม่ครบถ้วน') g.dataIncomplete += 1;
+    });
+    return groups;
   }
 
   function downloadBuffer(buffer, filename){
@@ -5158,10 +5208,17 @@
   runBtn.addEventListener('click', async ()=>{
     runErrorWrap.innerHTML = '';
     resultsCard.style.display = 'none';
-    if(!fileComplaintObj && !fileAssistObj){
+
+    if(autoMode === 'edited'){
+      if(!fileComplaintObj){
+        runErrorWrap.innerHTML = `<div class="error-box">กรุณาอัปโหลดไฟล์ KPI Dashboard ระดับบุคคลก่อนประมวลผล</div>`;
+        return;
+      }
+    } else if(!fileComplaintObj && !fileAssistObj){
       runErrorWrap.innerHTML = `<div class="error-box">กรุณาอัปโหลดไฟล์อย่างน้อย 1 ไฟล์ก่อนประมวลผล</div>`;
       return;
     }
+
     renderSteps();
     stepsLog.style.display = 'flex';
     runBtn.disabled = true;
@@ -5173,35 +5230,88 @@
     const footnoteLines = document.getElementById('setFootnote').value.split('\n').map(s=>s.trim()).filter(Boolean);
     const asOfDate = document.getElementById('setAsOfDate').value.trim();
 
-    // In "edited" mode the uploaded files ARE the report — there's no
-    // split/report step to redo, so those buttons just re-offer the same
-    // file back (handy as a single place to grab both files again).
-    const resultsCardTitleComplaint = document.querySelector('#resultsCard .result-card:nth-child(1) h3');
-    const resultsCardTitleAssist = document.querySelector('#resultsCard .result-card:nth-child(2) h3');
-    if(resultsCardTitleComplaint) resultsCardTitleComplaint.textContent = autoMode==='edited' ? 'รายงาน สตพ. — เรื่องร้องเรียน (ไฟล์ที่อัปโหลด)' : 'รายงาน สตพ. — เรื่องร้องเรียน';
-    if(resultsCardTitleAssist) resultsCardTitleAssist.textContent = autoMode==='edited' ? 'รายงาน สตพ. — เรื่องขอความอนุเคราะห์ (ไฟล์ที่อัปโหลด)' : 'รายงาน สตพ. — เรื่องขอความอนุเคราะห์';
+    const resultCardPerson = document.getElementById('resultCardPerson');
+    const resultCardUnit = document.getElementById('resultCardUnit');
+    const resultsCardSub = document.getElementById('resultsCardSub');
 
     try{
+      if(autoMode === 'edited'){
+        // ---- edited mode: one KPI Dashboard (person-level) file in →
+        // recompute the KPI Dashboard ระดับส่วนงาน summary from it, using
+        // the exact same counting rules the dashboard used originally. ----
+        kpiPersonHeaders = ['หน่วยงาน','ประเภทเรื่อง','CPN','No.','ผู้รับผิดชอบ','วันที่รับ','วันที่เริ่มนับ',
+          'วันที่เสร็จ','จำนวนวันดำเนินการ (วัน)','เกณฑ์การปฏิบัติงาน','การนำเข้าข้อมูล','สถานะการดำเนินงาน',
+          'ประเภทการดำเนินงาน','ระดับผลดำเนินการ'];
+        kpiPersonRows = await processPersonLevelFile(fileComplaintObj, 'read1');
+
+        if(!kpiPersonRows.length){
+          throw new Error('ไม่พบแถวข้อมูลในไฟล์ที่อัปโหลด ลองตรวจสอบว่าไฟล์มีข้อมูลอยู่จริงหรือไม่');
+        }
+
+        setStep('merge','active');
+        kpiUnitHeaders = kpiBuildUnitHeaders(criteriaDays);
+        const groups = kpiAggregateByUnitFromPersonRows(kpiPersonRows, criteriaDays);
+        const groupList = Array.from(groups.values());
+        groupList.sort((a,b)=>{
+          if(a.sortKey !== b.sortKey) return a.sortKey - b.sortKey;
+          if(a.typeLabel !== b.typeLabel) return a.typeLabel === 'เรื่องร้องเรียน' ? -1 : 1;
+          return a.unit.localeCompare(b.unit, 'th');
+        });
+        kpiUnitRows = groupList.map(g => ({
+          'หน่วยงาน': g.unit, 'เดือน': g.monthTH, 'ปี': g.yearBE, 'ประเภทเรื่อง': g.typeLabel,
+          'จำนวนเรื่องที่ได้รับ (เรื่อง)': g.received,
+          'จำนวนเรื่องที่ดำเนินการแล้วเสร็จ (เรื่อง)': g.completed,
+          'อยู่ระหว่างดำเนินการ (เรื่อง)': g.inProgress,
+          [`จำนวนเรื่องที่แล้วเสร็จตามระยะเวลา ${criteriaDays} วัน (เรื่อง)`]: g.within,
+          'เกินระยะเวลา (เรื่อง)': g.overtime,
+          'นำเข้าข้อมูลครบถ้วน (เรื่อง)': g.dataComplete,
+          'ยังนำเข้าข้อมูลไม่ครบถ้วน (เรื่อง)': g.dataIncomplete,
+        }));
+        setStep('merge','done');
+
+        // ---- render results: the unit-level summary is the point of this mode ----
+        resultsCardSub.textContent = 'ไฟล์ KPI Dashboard 1 ไฟล์ (ระดับส่วนงาน)';
+        resultCardPerson.style.display = 'none';
+        resultCardUnit.style.display = '';
+
+        const unitsForLegend = [...new Set(kpiUnitRows.map(r=>r['หน่วยงาน']))];
+        document.getElementById('unitSummary').textContent = kpiUnitRows.length ? `${kpiUnitRows.length} แถวสรุป` : 'ไม่พบแถวที่จัดกลุ่มได้ (ต้องมีวันที่รับ)';
+
+        const legend = document.getElementById('previewLegend');
+        legend.innerHTML = `<span>รวม <strong>${kpiUnitRows.length}</strong> แถวสรุป (ระดับส่วนงาน)</span>&nbsp;&nbsp;|&nbsp;&nbsp;<span><strong>${unitsForLegend.length}</strong> หน่วยงาน: ${escapeHtml(unitsForLegend.join(', '))}</span>`;
+
+        let unitHtml = '<thead><tr>' + kpiUnitHeaders.map(h=>`<th>${escapeHtml(h)}</th>`).join('') + '</tr></thead><tbody>';
+        kpiUnitRows.forEach(r=>{
+          unitHtml += '<tr>' + kpiUnitHeaders.map(h=>`<td>${escapeHtml(r[h])}</td>`).join('') + '</tr>';
+        });
+        unitHtml += '</tbody>';
+        document.getElementById("autoPreviewTable").innerHTML = unitHtml;
+
+        document.getElementById('dlKpiUnit').disabled = !kpiUnitRows.length;
+        document.getElementById('cpKpiUnit').disabled = !kpiUnitRows.length;
+        document.getElementById('dlKpiPerson').disabled = true;
+        document.getElementById('cpKpiPerson').disabled = true;
+
+        resultsCard.style.display = 'block';
+        resultsCard.scrollIntoView({ behavior:'smooth', block:'start' });
+        return;
+      }
+
+      // ---- raw mode: split → report → merge pipeline (unchanged) ----
       let wbComplaint = null, wbAssist = null;
 
       if(fileComplaintObj){
-        const res = autoMode === 'edited'
-          ? await processOneFileEdited(fileComplaintObj, 'read1')
-          : await processOneFile(fileComplaintObj, 'grouped', titleComplaint, criteriaDays, [], '', 'read1','split1','report1');
+        const res = await processOneFile(fileComplaintObj, 'grouped', titleComplaint, criteriaDays, [], '', 'read1','split1','report1');
         outFiles.reportComplaintBuf = res.buffer;
         wbComplaint = res.wbForKpi;
-        document.getElementById('dlReportComplaint').disabled = false;
       } else {
         ['read1','split1','report1'].forEach(k=> setStep(k,'done'));
       }
 
       if(fileAssistObj){
-        const res = autoMode === 'edited'
-          ? await processOneFileEdited(fileAssistObj, 'read2')
-          : await processOneFile(fileAssistObj, 'flat', titleAssist, criteriaDays, footnoteLines, asOfDate, 'read2','split2','report2');
+        const res = await processOneFile(fileAssistObj, 'flat', titleAssist, criteriaDays, footnoteLines, asOfDate, 'read2','split2','report2');
         outFiles.reportAssistBuf = res.buffer;
         wbAssist = res.wbForKpi;
-        document.getElementById('dlReportAssist').disabled = false;
       } else {
         ['read2','split2','report2'].forEach(k=> setStep(k,'done'));
       }
@@ -5242,9 +5352,12 @@
       }
 
       // ---- render results ----
+      resultsCardSub.textContent = 'ไฟล์ KPI Dashboard 1 ไฟล์ (ระดับบุคคล)';
+      resultCardPerson.style.display = '';
+      resultCardUnit.style.display = 'none';
+
       const units = [...new Set(kpiPersonRows.map(r=>r['หน่วยงาน']))];
       document.getElementById('personSummary').textContent = `${kpiPersonRows.length} แถว · ${units.length} หน่วยงาน`;
-      document.getElementById('unitSummary').textContent = kpiUnitRows.length ? `${kpiUnitRows.length} แถวสรุป` : 'ไม่พบแถวที่จัดกลุ่มได้ (ต้องมีวันที่รับเรื่อง)';
 
       const legend = document.getElementById('previewLegend');
       legend.innerHTML = `<span>รวม <strong>${kpiPersonRows.length}</strong> แถว (ระดับบุคคล)</span>&nbsp;&nbsp;|&nbsp;&nbsp;<span><strong>${units.length}</strong> หน่วยงาน: ${escapeHtml(units.join(', '))}</span>`;
@@ -5258,9 +5371,9 @@
       document.getElementById("autoPreviewTable").innerHTML = html;
 
       document.getElementById('dlKpiPerson').disabled = false;
-      document.getElementById('dlKpiUnit').disabled = !kpiUnitRows.length;
       document.getElementById('cpKpiPerson').disabled = false;
-      document.getElementById('cpKpiUnit').disabled = !kpiUnitRows.length;
+      document.getElementById('dlKpiUnit').disabled = true;
+      document.getElementById('cpKpiUnit').disabled = true;
 
       resultsCard.style.display = 'block';
       resultsCard.scrollIntoView({ behavior:'smooth', block:'start' });
@@ -5276,26 +5389,20 @@
     }
   });
 
-  document.getElementById('dlReportComplaint').addEventListener('click', ()=>{
-    if(outFiles.reportComplaintBuf) downloadBuffer(outFiles.reportComplaintBuf, 'รายงานสตพ_เรื่องร้องเรียน.xlsx');
-  });
-  document.getElementById('dlReportAssist').addEventListener('click', ()=>{
-    if(outFiles.reportAssistBuf) downloadBuffer(outFiles.reportAssistBuf, 'รายงานสตพ_เรื่องขอความอนุเคราะห์.xlsx');
-  });
   document.getElementById('dlKpiPerson').addEventListener('click', ()=>{
     if(kpiPersonRows.length) downloadCsv(kpiPersonHeaders, kpiPersonRows, 'kpi_dashboard_บุคคล.csv');
   });
-  document.getElementById('dlKpiUnit').addEventListener('click', ()=>{
-    if(kpiUnitRows.length) downloadCsv(kpiUnitHeaders, kpiUnitRows, 'kpi_dashboard_ส่วนงาน.csv');
-  });
   document.getElementById('cpKpiPerson').addEventListener('click', (e)=>{
     if(kpiPersonRows.length) copyTsvToClipboard(kpiPersonHeaders, kpiPersonRows, e.currentTarget);
+  });
+  document.getElementById('dlKpiUnit').addEventListener('click', ()=>{
+    if(kpiUnitRows.length) downloadCsv(kpiUnitHeaders, kpiUnitRows, 'kpi_dashboard_ส่วนงาน.csv');
   });
   document.getElementById('cpKpiUnit').addEventListener('click', (e)=>{
     if(kpiUnitRows.length) copyTsvToClipboard(kpiUnitHeaders, kpiUnitRows, e.currentTarget);
   });
 
-  ['dlReportComplaint','dlReportAssist','dlKpiPerson','dlKpiUnit','cpKpiPerson','cpKpiUnit'].forEach(id=>{
+  ['dlKpiPerson','cpKpiPerson','dlKpiUnit','cpKpiUnit'].forEach(id=>{
     document.getElementById(id).disabled = true;
   });
 

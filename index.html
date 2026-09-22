@@ -4050,6 +4050,16 @@
     return String(s===undefined||s===null?'':s).replace(/\s+/g,'').trim();
   }
   const SHEET_NAMES_NORM = SHEET_NAMES.map(normalizeUnitVal);
+  // แถวที่คอลัมน์ "หน่วยงานที่รับผิดชอบ" ไม่ตรงกับ 5 หน่วยงานหลัก (สตพ.1/2/3, สรม., สตฉ.)
+  // แต่เลข CPN เป็นรูปแบบ "..-R01".."..-R16" (สคพ. เขต 1-16) ให้แยกลงชีท "สคพ. N"
+  // ตามเลขที่ต่อท้าย R แทนที่จะรวมทุกแถวไว้ในชีท "สคพ." ก้อนเดียว — อิงตามไฟล์ตัวอย่าง
+  // kpi_dashboard ที่หน่วยงานถูกเติมไว้ถูกต้องแล้ว (เลขหลัง R ตรงกับเลขหน่วยงาน สคพ. เป๊ะทุกแถว)
+  function deriveSubUnitFromCpn(cpnVal){
+    const s = String(cpnVal===undefined||cpnVal===null?'':cpnVal);
+    const m = s.match(/R\s*0*(\d+)/i);
+    if(!m) return null;
+    return `สคพ.${m[1]}`;
+  }
   const REPORT_COLS = ['ลำดับที่','CPN','No.','วันที่รับเรื่อง','','','วันที่ออก ส.','','','ผลดำเนินการ','ประเภทเรื่อง','จำนวนวัน','ผลการตรวจสอบการลงฐานข้อมูล (ครบ/ไม่ครบ)'];
   // Column groups whose header text should span 3 sub-columns (day/month/year),
   // matching the merged "วันที่รับเรื่อง" / "วันที่ออก ส." headers in the template.
@@ -4730,10 +4740,21 @@
 
   // ---- buildReportSheets / buildReportSheetsFlat (grouping/bucketing logic
   // copied as-is from the original tool, reading the module dataRows/opts) ----
+  // เรียงชื่อชีทย่อย "สคพ. N" ตามเลข N จากน้อยไปมาก (ไม่ใช่เรียงตามตัวอักษร ซึ่งจะทำให้
+  // "สคพ. 10" มาก่อน "สคพ. 2")
+  function sortSubUnitNames(names){
+    return names.slice().sort((a,b)=>{
+      const na = parseInt(a.replace(/\D+/g,''),10);
+      const nb = parseInt(b.replace(/\D+/g,''),10);
+      return na - nb;
+    });
+  }
+
   function buildReportSheets(opts){
     const { respIdx, nameIdx, receiveIdxArr, issueIdxArr, typeIdx, cpnIdx, noIdx, serviceDaysIdx, serviceDaysDefault, titleBase } = opts;
     const buckets = {};
     SHEET_NAMES.forEach(n=> buckets[n] = []);
+    const subBuckets = {}; // "สคพ. 1".."สคพ. 16" ฯลฯ ตามเลขหลัง R ใน CPN
     const unmatched = [];
     dataRows.forEach(row=>{
       const raw = respIdx >= 0 ? row[respIdx] : '';
@@ -4741,13 +4762,20 @@
       const matchIdx = SHEET_NAMES_NORM.findIndex(n=> val === n);
       const matchIdx2 = matchIdx >= 0 ? matchIdx : SHEET_NAMES_NORM.findIndex(n=> val && val.includes(n));
       const match = matchIdx2 >= 0 ? SHEET_NAMES[matchIdx2] : undefined;
-      if(match) buckets[match].push(row);
-      else unmatched.push(row);
+      if(match){ buckets[match].push(row); return; }
+      const subUnit = deriveSubUnitFromCpn(cpnIdx >= 0 ? row[cpnIdx] : '');
+      if(subUnit){
+        if(!subBuckets[subUnit]) subBuckets[subUnit] = [];
+        subBuckets[subUnit].push(row);
+      } else {
+        unmatched.push(row);
+      }
     });
     const rowOpts = { nameIdx, receiveIdxArr, issueIdxArr, typeIdx, cpnIdx, noIdx, serviceDaysIdx, serviceDaysDefault, titleBase };
-    const sheetNamesToBuild = SHEET_NAMES.concat(unmatched.length ? ['สคพ.'] : []);
+    const subUnitNames = sortSubUnitNames(Object.keys(subBuckets));
+    const sheetNamesToBuild = SHEET_NAMES.concat(subUnitNames).concat(unmatched.length ? ['สคพ.'] : []);
     return sheetNamesToBuild.map(sheetName=>{
-      const rows = sheetName === 'สคพ.' ? unmatched : buckets[sheetName];
+      const rows = sheetName === 'สคพ.' ? unmatched : (subBuckets[sheetName] || buckets[sheetName]);
       const { title, entries } = buildSheetRows(sheetName, rows, rowOpts);
       return { name: sheetName, title, entries, count: rows.length };
     });
@@ -4757,6 +4785,7 @@
     const { respIdx, sourceIdx, businessIdx, receiveIdxArr, issueIdxArr, typeIdx, cpnIdx, noIdx, serviceDaysIdx, serviceDaysDefault, refNoIdx, ownerIdx, titleBase } = opts;
     const buckets = {};
     SHEET_NAMES.forEach(n=> buckets[n] = []);
+    const subBuckets = {}; // "สคพ. 1".."สคพ. 16" ฯลฯ ตามเลขหลัง R ใน CPN
     const unmatched = [];
     dataRows.forEach(row=>{
       const raw = respIdx >= 0 ? row[respIdx] : '';
@@ -4764,13 +4793,20 @@
       const matchIdx = SHEET_NAMES_NORM.findIndex(n=> val === n);
       const matchIdx2 = matchIdx >= 0 ? matchIdx : SHEET_NAMES_NORM.findIndex(n=> val && val.includes(n));
       const match = matchIdx2 >= 0 ? SHEET_NAMES[matchIdx2] : undefined;
-      if(match) buckets[match].push(row);
-      else unmatched.push(row);
+      if(match){ buckets[match].push(row); return; }
+      const subUnit = deriveSubUnitFromCpn(cpnIdx >= 0 ? row[cpnIdx] : '');
+      if(subUnit){
+        if(!subBuckets[subUnit]) subBuckets[subUnit] = [];
+        subBuckets[subUnit].push(row);
+      } else {
+        unmatched.push(row);
+      }
     });
     const rowOpts = { businessIdx, sourceIdx, receiveIdxArr, issueIdxArr, typeIdx, cpnIdx, noIdx, serviceDaysIdx, serviceDaysDefault, refNoIdx, ownerIdx, titleBase };
-    const sheetNamesToBuild = SHEET_NAMES.concat(unmatched.length ? ['สคพ.'] : []);
+    const subUnitNames = sortSubUnitNames(Object.keys(subBuckets));
+    const sheetNamesToBuild = SHEET_NAMES.concat(subUnitNames).concat(unmatched.length ? ['สคพ.'] : []);
     return sheetNamesToBuild.map(sheetName=>{
-      const rows = sheetName === 'สคพ.' ? unmatched : buckets[sheetName];
+      const rows = sheetName === 'สคพ.' ? unmatched : (subBuckets[sheetName] || buckets[sheetName]);
       const { title, entries } = buildSheetRowsFlat(sheetName, rows, rowOpts);
       return { name: sheetName, title, entries, count: rows.length };
     });

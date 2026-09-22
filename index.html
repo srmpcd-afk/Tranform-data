@@ -800,6 +800,7 @@
   #panel-auto .field input:focus,
   #panel-auto .field textarea:focus{ outline:none; border-color:var(--teal-mid); background:var(--white); }
   #panel-auto .field.full{ grid-column:1/-1; }
+  #panel-auto .auto-hidden-field{ display:none !important; }
   #panel-auto details.settings summary{
     cursor:pointer; font-weight:700; font-size:13.5px; color:var(--teal-deep);
     margin-bottom:10px; user-select:none;
@@ -1615,7 +1616,7 @@
     <div id="uploadErrorWrap"></div>
   </div>
 
-  <div class="card" id="autoSettingsCard">
+  <div class="card" id="autoSettingsCard" style="display:none;">
     <h2><span class="step-badge">2</span>ตั้งค่า (ไม่บังคับ)</h2>
     <p class="sub" id="autoSettingsHiddenNote" style="display:none;">ไม่ใช้ในโหมด &ldquo;ไฟล์ที่แก้ไขแล้ว&rdquo; ยกเว้นเกณฑ์จำนวนวัน</p>
     <details class="settings">
@@ -1626,11 +1627,11 @@
           <input type="number" id="setCriteriaDays" value="45" min="1">
         </div>
         <div class="field"></div>
-        <div class="field full auto-report-only-field">
+        <div class="field full auto-report-only-field auto-hidden-field">
           <label for="setTitleComplaint">หัวข้อรายงาน — เรื่องร้องเรียน</label>
           <input type="text" id="setTitleComplaint" value="ผลการตรวจสอบข้อมูลผลดำเนินการจัดการเรื่องร้องเรียนปัญหามลพิษประจำปีงบประมาณ 2569 (เดือนตุลาคม 2568 - มิถุนายน 2569)">
         </div>
-        <div class="field full auto-report-only-field">
+        <div class="field full auto-report-only-field auto-hidden-field">
           <label for="setTitleAssist">หัวข้อรายงาน — เรื่องขอความอนุเคราะห์</label>
           <input type="text" id="setTitleAssist" value="ผลการตรวจสอบข้อมูลผลดำเนินการจัดการเรื่องขอความอนุเคราะห์ ประจำปีงบประมาณ 2569 เดือนตุลาคม 2568 - มิถุนายน 2569">
         </div>
@@ -1647,7 +1648,7 @@
   </div>
 
   <div class="card">
-    <h2><span class="step-badge">3</span>ประมวลผลอัตโนมัติ</h2>
+    <h2><span class="step-badge">2</span>ประมวลผลอัตโนมัติ</h2>
     <p class="sub">แยกคอลัมน์ → จัดรายงานแยกตามหน่วยงาน → รวมเป็นไฟล์ KPI ต่อกันในคลิกเดียว</p>
     <div class="btn-row">
       <button class="btn btn-primary" id="runBtn">ประมวลผลอัตโนมัติทั้งหมด</button>

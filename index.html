@@ -3588,24 +3588,18 @@
     return t.replace(/^\s*อื่น\s*ๆ\s*[:\-–.]*\s*/, '').trim();
   }
 
-  // Estimates "ระดับผลดำเนินการ" (1-3) from the raw "ประเภทการดำเนินงาน" /
+  // Estimates "ระดับผลดำเนินการ" (1-4) from the raw "ประเภทการดำเนินงาน" /
   // "ประเภทเรื่อง" text — BEFORE kpiCleanOpType strips any leading "อื่น ๆ",
-  // since a row's own leftover "อื่น ๆ" is itself a signal (forced to level 1
-  // for complaint files) per หมายเหตุ: ระดับผลดำเนินการตามประเภทการดำเนินงาน:
+  // since a row's own leftover "อื่น ๆ" is itself a signal.
   //
-  //   ติดตามผล (anywhere in the text) always wins and forces level 1,
-  //   regardless of dataType or any other keyword also present.
+  // Scoring (identical for complaint and assist files):
+  //   1 = อื่น ๆ  (any spacing variant, only when it is at the front of the text — always wins)
+  //   2 = ทำ ส.
+  //   3 = เข้าร่วมตรวจสอบ
+  //   4 = ตรวจสอบ
   //
-  //   เรื่องร้องเรียน (complaint):
-  //     1 = contains "อื่น ๆ" (any spacing variant)
-  //     3 = ตรวจสอบ
-  //     2 = ทำ ส.
-  //     1 = ติดตามผลดำเนินการจากหน่วยงาน / นำผลดำเนินการแจ้งให้ผู้ร้องเรียนทราบ
-  //
-  //   เรื่องขอความอนุเคราะห์ (assist):
-  //     3 = ตรวจสอบ
-  //     2 = เข้าร่วมตรวจสอบ
-  //     1 = ทำ ส. แจ้งตอบ / ติดตามผล
+  //   Also level 1: ติดตามผล (anywhere in the text, always wins) and
+  //   "นำผลดำเนินการแจ้ง…" / "แจ้งผู้ร้อง…".
   //
   // Returns '' if the text doesn't match a known pattern — those should be
   // checked and filled in by hand.
@@ -3613,21 +3607,23 @@
     const t = (actionText||'').trim();
     if(!t) return '';
     const norm = t.replace(/ทํา/g, 'ทำ'); // normalize the two sara-am glyphs used for ทำ/ทํา
-    // "ติดตามผล" always means level 1, wherever it appears in the text —
-    // takes priority over every other rule below.
+    // Same rules for complaint and assist files (dataType is not used).
+    // "ติดตามผล" always means level 1, wherever it appears in the text.
     if(norm.indexOf('ติดตามผล') !== -1) return '1';
-    if(dataType === 'assist'){
-      if(norm.indexOf('เข้าร่วมตรวจสอบ') === 0) return '2';
-      if(norm.indexOf('ตรวจสอบ') === 0) return '3';
-      if((norm.indexOf('ทำ ส') === 0 || norm.indexOf('ทำส') === 0) && norm.indexOf('แจ้งตอบ') !== -1) return '1';
-      return '';
-    }
-    // default: เรื่องร้องเรียน — a leftover "อื่น ๆ" on a complaint row is
-    // itself the signal for level 1, ahead of the ตรวจสอบ/ทำ ส. keyword checks.
-    if(/อื่น\s*ๆ/.test(norm)) return '1';
-    if(norm.indexOf('ตรวจสอบ') === 0) return '3';
-    if(norm.indexOf('ทำ ส') === 0 || norm.indexOf('ทำส') === 0) return '2';
+    // "อื่น ๆ" at the very front of the text always means level 1 (beats everything below).
+    if(/^\s*อื่น\s*ๆ/.test(norm)) return '1';
+    const isJoin   = /^(เข้า)?ร่วมตรวจสอบ|^ช่วงตรวจสอบ/;      // 3
+    const isCheck  = /^ตรวจสอบ/;                              // 4
+    const isSor    = /^ทำ\s*ส/;                               // 2
+    // pass 1: keyword at the start of the text
+    if(isJoin.test(norm))  return '3';
+    if(isCheck.test(norm)) return '4';
+    if(isSor.test(norm))   return '2';
     if(norm.indexOf('นำผลดำเนินการแจ้ง') === 0 || norm.indexOf('แจ้งผู้ร้อง') === 0) return '1';
+    // pass 2: keyword somewhere later in the text
+    if(/(เข้า)?ร่วมตรวจสอบ|ช่วงตรวจสอบ/.test(norm)) return '3';
+    if(/ตรวจสอบ/.test(norm)) return '4';
+    if(/ทำ\s*ส/.test(norm)) return '2';
     return '';
   }
 
@@ -4440,24 +4436,18 @@
     return t.replace(/^\s*อื่น\s*ๆ\s*[:\-–.]*\s*/, '').trim();
   }
 
-  // Estimates "ระดับผลดำเนินการ" (1-3) from the raw "ประเภทการดำเนินงาน" /
+  // Estimates "ระดับผลดำเนินการ" (1-4) from the raw "ประเภทการดำเนินงาน" /
   // "ประเภทเรื่อง" text — BEFORE kpiCleanOpType strips any leading "อื่น ๆ",
-  // since a row's own leftover "อื่น ๆ" is itself a signal (forced to level 1
-  // for complaint files) per หมายเหตุ: ระดับผลดำเนินการตามประเภทการดำเนินงาน:
+  // since a row's own leftover "อื่น ๆ" is itself a signal.
   //
-  //   ติดตามผล (anywhere in the text) always wins and forces level 1,
-  //   regardless of dataType or any other keyword also present.
+  // Scoring (identical for complaint and assist files):
+  //   1 = อื่น ๆ  (any spacing variant, only when it is at the front of the text — always wins)
+  //   2 = ทำ ส.
+  //   3 = เข้าร่วมตรวจสอบ
+  //   4 = ตรวจสอบ
   //
-  //   เรื่องร้องเรียน (complaint):
-  //     1 = contains "อื่น ๆ" (any spacing variant)
-  //     3 = ตรวจสอบ
-  //     2 = ทำ ส.
-  //     1 = ติดตามผลดำเนินการจากหน่วยงาน / นำผลดำเนินการแจ้งให้ผู้ร้องเรียนทราบ
-  //
-  //   เรื่องขอความอนุเคราะห์ (assist):
-  //     3 = ตรวจสอบ
-  //     2 = เข้าร่วมตรวจสอบ
-  //     1 = ทำ ส. แจ้งตอบ / ติดตามผล
+  //   Also level 1: ติดตามผล (anywhere in the text, always wins) and
+  //   "นำผลดำเนินการแจ้ง…" / "แจ้งผู้ร้อง…".
   //
   // Returns '' if the text doesn't match a known pattern — those should be
   // checked and filled in by hand.
@@ -4465,21 +4455,23 @@
     const t = (actionText||'').trim();
     if(!t) return '';
     const norm = t.replace(/ทํา/g, 'ทำ'); // normalize the two sara-am glyphs used for ทำ/ทํา
-    // "ติดตามผล" always means level 1, wherever it appears in the text —
-    // takes priority over every other rule below.
+    // Same rules for complaint and assist files (dataType is not used).
+    // "ติดตามผล" always means level 1, wherever it appears in the text.
     if(norm.indexOf('ติดตามผล') !== -1) return '1';
-    if(dataType === 'assist'){
-      if(norm.indexOf('เข้าร่วมตรวจสอบ') === 0) return '2';
-      if(norm.indexOf('ตรวจสอบ') === 0) return '3';
-      if((norm.indexOf('ทำ ส') === 0 || norm.indexOf('ทำส') === 0) && norm.indexOf('แจ้งตอบ') !== -1) return '1';
-      return '';
-    }
-    // default: เรื่องร้องเรียน — a leftover "อื่น ๆ" on a complaint row is
-    // itself the signal for level 1, ahead of the ตรวจสอบ/ทำ ส. keyword checks.
-    if(/อื่น\s*ๆ/.test(norm)) return '1';
-    if(norm.indexOf('ตรวจสอบ') === 0) return '3';
-    if(norm.indexOf('ทำ ส') === 0 || norm.indexOf('ทำส') === 0) return '2';
+    // "อื่น ๆ" at the very front of the text always means level 1 (beats everything below).
+    if(/^\s*อื่น\s*ๆ/.test(norm)) return '1';
+    const isJoin   = /^(เข้า)?ร่วมตรวจสอบ|^ช่วงตรวจสอบ/;      // 3
+    const isCheck  = /^ตรวจสอบ/;                              // 4
+    const isSor    = /^ทำ\s*ส/;                               // 2
+    // pass 1: keyword at the start of the text
+    if(isJoin.test(norm))  return '3';
+    if(isCheck.test(norm)) return '4';
+    if(isSor.test(norm))   return '2';
     if(norm.indexOf('นำผลดำเนินการแจ้ง') === 0 || norm.indexOf('แจ้งผู้ร้อง') === 0) return '1';
+    // pass 2: keyword somewhere later in the text
+    if(/(เข้า)?ร่วมตรวจสอบ|ช่วงตรวจสอบ/.test(norm)) return '3';
+    if(/ตรวจสอบ/.test(norm)) return '4';
+    if(/ทำ\s*ส/.test(norm)) return '2';
     return '';
   }
   function kpiFindHeaderRowAndMap(aoa){
